@@ -1,6 +1,12 @@
-import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox";
 import "hardhat-gas-reporter";
+import { HardhatUserConfig, task } from "hardhat/config";
+
+task("deploy-testnets", "Deploys contract on a provided network")
+  .setAction(async () => {
+    const { deployLibrary } = require('./scripts/deploy');
+    await deployLibrary();
+  });
 
 const config: HardhatUserConfig = {
   solidity: {
@@ -12,8 +18,8 @@ const config: HardhatUserConfig = {
       },
     },
   },
-  gasReporter:{
-    enabled:true,
+  gasReporter: {
+    enabled: true,
   }
 };
 
