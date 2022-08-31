@@ -1,4 +1,5 @@
-pragma solidity 0.8.3;
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity ^0.8.0;
 
 contract BookStore {
     address public owner;
@@ -11,14 +12,15 @@ contract BookStore {
     }
 
      Book[] availibleBooks;
-     mapping(string => address[]) userBooks;
+     mapping(uint256 => address[]) userBooks;
 
     constructor(){
         owner = msg.sender;
     }
 
-    function addNewBook(Book calldata book) public  {
+    function addNewBook(string calldata title, uint256 allBooks) public  {
         require(msg.sender == owner, "Not the owner");
+        Book memory book = Book(title,0,allBooks);
         availibleBooks.push(book);
     }
 
@@ -27,8 +29,8 @@ contract BookStore {
     }
 
     modifier checkIfBookwasBorrowed(uint256 bookId){
-        for(uint i=0;i<userBooks[availibleBooks[bookId].title].length;i=i+1){
-            require(userBooks[availibleBooks[bookId].title][i] != msg.sender,"You already have the book");
+        for(uint i=0;i<userBooks[bookId].length;i=i+1){
+            require(userBooks[bookId][i] != msg.sender,"You already have the book");
         }
         _;
     }
@@ -36,10 +38,10 @@ contract BookStore {
     function getABook(uint256 bookId) public checkIfBookwasBorrowed(bookId){
         require(availibleBooks[bookId].borrowed < availibleBooks[bookId].allBooks, "No availible books");
         availibleBooks[bookId].borrowed++;
-        userBooks[availibleBooks[bookId].title].push(msg.sender);
+        userBooks[bookId].push(msg.sender);
     }
 
     function seeOtherUsers(uint256 bookId) public view returns(address[] memory){
-        return userBooks[availibleBooks[bookId].title];
+        return userBooks[bookId];
     }
 }
