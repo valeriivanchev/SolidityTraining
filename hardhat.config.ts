@@ -14,6 +14,12 @@ subtask("print", "Prints valuble info")
   .setAction(async ({ deployerAddress, contractAddress }) => {
     console.log(`Deployed contract with the account: ${deployerAddress}`);
     console.log(`Deployed contract at address: ${contractAddress}`)
+  });
+
+task("deploy-LimeToken", "Deploys the LimeToken")
+  .setAction(async () => {
+    const { deployLimeToken } = require('./scripts/deploy');
+    await deployLimeToken();
   })
 
 
