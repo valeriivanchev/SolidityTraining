@@ -9,6 +9,7 @@ contract BookStore is Ownable {
     }
     event BorrowBook(address user, bytes32 bookId);
     event AddBook(Book book);
+    event ReturnBook(address user, bytes32 bookId);
 
     mapping(bytes32 => Book) public availibleBooks;
     bytes32[] public bookIds;
@@ -23,8 +24,10 @@ contract BookStore is Ownable {
         onlyOwner
     {
         Book memory book = Book(title, allBooks);
-        bytes32 bookId = keccak256(abi.encodePacked(title, title));
-        if (availibleBooks[bookId].allBooks == 0) {
+        bytes32 bookId = keccak256(abi.encodePacked(title));
+        if (
+            keccak256(abi.encodePacked(availibleBooks[bookId].title)) != bookId
+        ) {
             bookIds.push(bookId);
         }
         availibleBooks[bookId] = book;
@@ -47,6 +50,14 @@ contract BookStore is Ownable {
         _;
     }
 
+    modifier checkIfUserCanReturnABook(bytes32 bookId) {
+        require(
+            booksByUsers[msg.sender][bookId] == true,
+            "You don't have the book"
+        );
+        _;
+    }
+
     function borrowBook(bytes32 bookId)
         public
         checkIfUserCanBorrowABook(bookId)
@@ -56,6 +67,16 @@ contract BookStore is Ownable {
         numberOfBorrowedBooks[bookId]++;
 
         emit BorrowBook(msg.sender, bookId);
+    }
+
+    function returnBook(bytes32 bookId)
+        public
+        checkIfUserCanReturnABook(bookId)
+    {
+        booksByUsers[msg.sender][bookId] = false;
+        numberOfBorrowedBooks[bookId]--;
+
+        emit ReturnBook(msg.sender, bookId);
     }
 
     function seeOtherUsers(bytes32 bookId)

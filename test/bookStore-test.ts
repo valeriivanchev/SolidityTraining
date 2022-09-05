@@ -10,7 +10,6 @@ describe('BookStore', () => {
     interface Book {
         title: string;
         allBooks: number;
-        borrowed: number;
     }
 
     const Book = {
@@ -28,10 +27,9 @@ describe('BookStore', () => {
     it('Add a new book', async () => {
         const tnx = await bookStore.addNewBook(Book.title, Book.allBooks);
         await tnx.wait();
-        const allBooks = await bookStore.availibleBooks(await bookStore.bookIds(0));
-        console.log(allBooks[0])
-        expect(allBooks['title']).to.equal(Book.title);
-        expect(allBooks['allBooks']).to.equal(Book.allBooks);
+        const allBooks: Book = await bookStore.availibleBooks(await bookStore.bookIds(0));
+        expect(allBooks.title).to.equal(Book.title);
+        expect(allBooks.allBooks).to.equal(Book.allBooks);
     });
 
     it('Borrow a book', async () => {
@@ -50,8 +48,8 @@ describe('BookStore', () => {
         const bookId = await bookStore.bookIds(0);
         const tnx = await bookStore.connect(accounts[1]).borrowBook(bookId);
         await tnx.wait();
-        const otherUsers: Book[] = await bookStore.seeOtherUsers(bookId);
-        expect(otherUsers[1]).to.equal(accounts[1].address)
+        const otherUsers: string[] = await bookStore.seeOtherUsers(bookId);
+        expect(otherUsers[1]).to.equal(accounts[1].address);
     });
 
     it('Try adding book if not owner', async () => {
@@ -63,5 +61,20 @@ describe('BookStore', () => {
             .connect(accounts[2])
             .borrowBook(await bookStore.bookIds(0))).to.be
             .revertedWith('No availible books');
-    })
+    });
+
+    it('Return a book and get one from another user', async () => {
+        const bookId = await bookStore.bookIds(0);
+        const tnx = await bookStore.connect(accounts[1]).returnBook(bookId);
+        await tnx.wait();
+        const borrowTnx = await bookStore.connect(accounts[2]).borrowBook(bookId);
+        await borrowTnx.wait();
+        const otherUsers: string[] = await bookStore.seeOtherUsers(bookId);
+        expect(otherUsers[2]).to.equal(accounts[2].address);
+    });
+
+    it('Try returning the same book ', async () => {
+        const bookId = await bookStore.bookIds(0);
+        expect(bookStore.connect(accounts[1]).returnBook(bookId)).to.be.revertedWith(`You don't have the book`);
+    });
 })
