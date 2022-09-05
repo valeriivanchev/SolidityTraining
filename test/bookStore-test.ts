@@ -30,6 +30,8 @@ describe('BookStore', () => {
         const allBooks: Book = await bookStore.availibleBooks(await bookStore.bookIds(0));
         expect(allBooks.title).to.equal(Book.title);
         expect(allBooks.allBooks).to.equal(Book.allBooks);
+        const getBookIdsLength = await bookStore.getBookIdLength();
+        expect(getBookIdsLength).to.equal(1);
     });
 
     it('Borrow a book', async () => {
