@@ -3,51 +3,62 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 
 contract BookStore is Ownable {
-    uint256 private numberOfBooks;
-
     struct Book {
         string title;
-        uint256 borrowed;
-        uint256 allBooks;
+        uint32 allBooks;
     }
+    event BorrowBook(address user, bytes32 bookId);
+    event AddBook(Book book);
 
-    Book[] availibleBooks;
-    mapping(uint256 => address[]) userBooks;
+    mapping(bytes32 => Book) public availibleBooks;
+    bytes32[] public bookIds;
+    mapping(address => mapping(bytes32 => bool)) booksByUsers;
+    mapping(bytes32 => uint32) numberOfBorrowedBooks;
+    mapping(bytes32 => address[]) userBooks;
 
     constructor() {}
 
-    function addNewBook(string calldata title, uint256 allBooks)
+    function addNewBook(string calldata title, uint32 allBooks)
         public
         onlyOwner
     {
-        Book memory book = Book(title, 0, allBooks);
-        availibleBooks.push(book);
-    }
-
-    function seeAllBooks() public view returns (Book[] memory) {
-        return availibleBooks;
-    }
-
-    modifier checkIfBookwasBorrowed(uint256 bookId) {
-        for (uint256 i = 0; i < userBooks[bookId].length; i = i + 1) {
-            require(
-                userBooks[bookId][i] != msg.sender,
-                "You already have the book"
-            );
+        Book memory book = Book(title, allBooks);
+        bytes32 bookId = keccak256(abi.encodePacked(title, title));
+        if (availibleBooks[bookId].allBooks == 0) {
+            bookIds.push(bookId);
         }
+        availibleBooks[bookId] = book;
+        emit AddBook(book);
+    }
+
+    function getBookIdLength() public view returns (uint256) {
+        return bookIds.length;
+    }
+
+    modifier checkIfUserCanBorrowABook(bytes32 bookId) {
+        require(
+            booksByUsers[msg.sender][bookId] != true,
+            "You already have the book"
+        );
+        require(
+            numberOfBorrowedBooks[bookId] < availibleBooks[bookId].allBooks,
+            "No availible books"
+        );
         _;
     }
 
-    function getABook(uint256 bookId) public checkIfBookwasBorrowed(bookId) {
-        require(
-            availibleBooks[bookId].borrowed < availibleBooks[bookId].allBooks,
-            "No availible books"
-        );
-        availibleBooks[bookId].borrowed++;
+    function borrowBook(bytes32 bookId)
+        public
+        checkIfUserCanBorrowABook(bookId)
+    {
+        booksByUsers[msg.sender][bookId] = true;
         userBooks[bookId].push(msg.sender);
+        numberOfBorrowedBooks[bookId]++;
+
+        emit BorrowBook(msg.sender, bookId);
     }
 
-    function seeOtherUsers(uint256 bookId)
+    function seeOtherUsers(bytes32 bookId)
         public
         view
         returns (address[] memory)
